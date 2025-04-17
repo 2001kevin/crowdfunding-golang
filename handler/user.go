@@ -67,8 +67,44 @@ func (h *userHandler) Login(c *gin.Context){
         return
     }
 
-    formatter := user.FormatUser(loggedinUser, "tokent acak")
+    formatter := user.FormatUser(loggedinUser, "token acak")
 
-    response := helper.APIResponse("Login failed", http.StatusUnprocessableEntity, "Failed", formatter)
+    response := helper.APIResponse("Successfully Loggedin", http.StatusOK, "success", formatter)
+    c.JSON(http.StatusOK, response)
+}
+
+func(h *userHandler) CheckEmailAvailability(c *gin.Context){
+    var input user.CheckEmailInput
+
+    err := c.ShouldBindJSON(&input)
+    if  err != nil {
+        errors := helper.FormatValidationError(err)
+        errorMessage := gin.H{"errors":errors}
+
+        response := helper.APIResponse("Checking email failed", http.StatusUnprocessableEntity, "Failed", errorMessage)
+        c.JSON(http.StatusUnprocessableEntity, response)
+        return
+    }
+
+    isEmailAvailable, err := h.userService.IsEmailAvailable(input)
+    if err != nil{
+        errorMessage := gin.H{"errors": "Server Error"}
+
+        response := helper.APIResponse("Checking email failed", http.StatusUnprocessableEntity, "Failed", errorMessage)
+        c.JSON(http.StatusUnprocessableEntity, response)
+        return
+    }
+
+    data := gin.H{
+        "is_available" : isEmailAvailable,
+    }
+
+    metaMessage := "Email has been registered"
+
+    if isEmailAvailable {
+        metaMessage = "Email is available"
+    }
+    
+    response := helper.APIResponse(metaMessage, http.StatusOK, "success", data)
     c.JSON(http.StatusOK, response)
 }
